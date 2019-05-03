@@ -1,0 +1,93 @@
+---
+title: "Relatório interativo"
+author: "Nazareno"
+output: 
+  html_document: 
+    code_folding: "hide"
+    theme: sandstone
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+theme_set(theme_bw())
+```
+
+```{r}
+vias = read_csv(
+  here::here("data/vias_processado.csv"),
+  col_types = cols(
+    .default = col_double(),
+    nomelograd = col_character(),
+    profissao = col_character(),
+    tipo_profissao = col_character(),
+    primeiro_nome = col_character(),
+    sobrenome = col_character()
+  )
+)
+
+profissoes_nos_dados = vias %>% 
+  filter(!is.na(profissao)) %>%  
+  pull(profissao) %>% 
+  unique()
+```
+
+
+Mais material sobre [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).
+
+## Inputs and Outputs
+
+Funções `*Input` geram entradas. Elas alteram elementos nomeados. Esses elementos podem ser usados em funções `render*` que geram elementos dinâmicos. Dentro das funções `render*` usamos um objeto chamado `ìnput` para acessar os valores criados em `*Input`. 
+
+Por exemplo, abaixo usamos um `selectInput` para setar o valor de `profissao`, que será acessada dentro de `renderPlot` abaixo como `input$profissao`.
+
+
+```{r}
+selectInput("profissao",
+            "Profissão",
+            choices = profissoes_nos_dados)
+
+sliderInput(
+  "quantas",
+  "Top quantas:",
+  min = 1,
+  max = 50,
+  value = 10
+)
+```
+
+Aqui podia ter texto como de costume. 
+
+Agora um plot que reage ao input. Tudo que está dentro de `render*` é executado toda vez que um valor usado de `input` muda.
+
+```{r}
+renderPlot({
+  vias_profissao = vias %>% filter(profissao == input$profissao)
+  vias_profissao %>%
+    arrange(-comprimento) %>% 
+    slice(1:input$quantas) %>% 
+    ggplot(aes(x = reorder(nomelograd, comprimento), 
+               y = comprimento / 1000)) + 
+    geom_point(color = "brown", size = 3, shape = 15) + 
+    coord_flip() + 
+    labs(
+      x = "",
+      y = "Comprimento (km)"
+    )
+})
+```
+
+```{r}
+renderTable({
+  vias %>% 
+    filter(profissao == input$profissao) %>% 
+    arrange(-comprimento) %>% 
+    select(nome = nomelograd, 
+           comprimento)
+})
+```
+
+

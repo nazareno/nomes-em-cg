@@ -1,4 +1,4 @@
-PROFISSOES = frame_data(
+PROFISSOES = tribble(
     ~profissao, ~tipo_profissao,
     "Professor", "liberal",
     "Professora", "liberal",
